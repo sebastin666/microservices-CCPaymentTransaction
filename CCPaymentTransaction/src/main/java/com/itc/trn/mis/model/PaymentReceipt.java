@@ -4,6 +4,7 @@ import java.util.Date;
 
 public class PaymentReceipt {
 
+	private String transId;
 	private String receiptNo;		// Receipt Service
 	private String cardNo;			// Input Pay load
 	private String amountSpent;		// Input Pay load
@@ -11,7 +12,13 @@ public class PaymentReceipt {
 	private String approvalStatus;	// Bank Approval Service
 	private String transStatus;		// Payment Gateway Service
 	private Date transTime;			// Payment Gateway Service
-	 
+	 	
+	public String getTransId() {
+		return transId;
+	}
+	public void setTransId(String transId) {
+		this.transId = transId;
+	}
 	public String getReceiptNo() {
 		return receiptNo;
 	}

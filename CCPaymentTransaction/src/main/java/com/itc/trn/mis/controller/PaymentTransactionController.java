@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,24 +25,28 @@ public class PaymentTransactionController {
 	@Autowired
 	RestTemplate restTemplate;
 	
-	@PostMapping("/paymerchant")
+	@PostMapping(value = "/paymerchant", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> payMerchant(@RequestBody PaymentInfo paymentInfo){
 		try {
 			logger.info("Payload::"+paymentInfo);
 			//
-			String approvalStatus = restTemplate.getForObject("", String.class);			
+			String approvalStatus = restTemplate.getForObject("http://CC-TransactionBankApproval/cardverification/transactionapproval/"+paymentInfo.getCardNo(), String.class);			
+			logger.info("Entry-approvalStatus::"+approvalStatus);
 			//			
-			TransactionInfo transactionInfo = restTemplate.postForObject("", paymentInfo, TransactionInfo.class);			
+			TransactionInfo transactionInfo = restTemplate.postForObject("http://CC-PaymentGateway/paymentgateway/moneytransfer", paymentInfo, TransactionInfo.class);
+			logger.info("TransactionInfo==>"+transactionInfo);
 			//
-			PaymentReceipt paymentReceipt = restTemplate.postForObject("", paymentInfo, PaymentReceipt.class);
+			PaymentReceipt paymentReceipt = restTemplate.postForObject("http://CC-PaymentReceipt/receipt/transreceipt", paymentInfo, PaymentReceipt.class);
 			//
 			paymentReceipt.setApprovalStatus(approvalStatus); 					// Update From Bank Approval Service
+			paymentReceipt.setTransId(transactionInfo.getTransId());			// Update From Payment Gateway Service
 			paymentReceipt.setTransStatus(transactionInfo.getTransStatus()); 	// Update From Payment Gateway Service
 			paymentReceipt.setTransTime(transactionInfo.getTransTime()); 		// Update From Payment Gateway Service
 			//			
 			return new ResponseEntity<PaymentReceipt>(paymentReceipt, HttpStatus.OK);
 		} catch (Exception ex) {
-			logger.error("Error Uploading file: ", ex);
+			ex.printStackTrace();
+			logger.error("Error while Merchant Payment: ", ex);
 			return new ResponseEntity<String>(ex.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
